@@ -1,7 +1,6 @@
 #ifndef HIT_H
 #define HIT_H
 
-
 class recordar_hits {
     public: 
         Ponto3d p;
