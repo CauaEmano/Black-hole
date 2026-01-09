@@ -7,9 +7,12 @@ class Esfera : public hitaveis {
     private:
         Ponto3d centro;
         double raio;
+        shared_ptr<Material> mat;
 
     public:
-        Esfera(const Ponto3d& centro, double raio) : centro(centro), raio(std::fmax(0, raio)) {}
+        Esfera(const Ponto3d& centro, double raio, shared_ptr<Material> mat) : centro(centro), raio(std::fmax(0, raio)), mat(mat) {
+            //TODO: Inicializar o material ponto mat
+        }
 
         bool hit(const Raio& r, Intervalo ray_t, recordar_hits& rec) const override {
             Vetor3d oc = centro - r.origem();
@@ -35,6 +38,7 @@ class Esfera : public hitaveis {
             rec.p = r.at(rec.t);
             Vetor3d outward_normal = (rec.p-centro)/ raio;
             rec.set_face_normal(r, outward_normal);
+            rec.mat = mat;
 
             return true;
         }

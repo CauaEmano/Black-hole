@@ -42,6 +42,19 @@ class Vetor3d {
             return std::sqrt(comprimento_quadrado());
         }
 
+        bool proximo_zero() const {
+            auto s = 1e-8;
+            return (std::fabs(e[0]) < s) && (std::fabs(e[1]) < s) && (std::fabs(e[2]) < s);
+        }
+
+        static Vetor3d random() {
+            return Vetor3d(random_double(), random_double(), random_double());
+        }
+
+        static Vetor3d random(double min, double max) {
+            return Vetor3d(random_double(min, max), random_double(min, max), random_double(min, max));
+        }
+
 };
 
 using Ponto3d = Vetor3d;
@@ -85,6 +98,29 @@ inline Vetor3d cross(const Vetor3d& a, const Vetor3d& b) {
 
 inline Vetor3d vetor_normalizado(const Vetor3d& a) {
     return a / a.comprimento();
+}
+
+inline Vetor3d random_unit_vector() {
+    while (true) {
+        auto p = Vetor3d::random(-1, 1);
+        auto lensq = p.comprimento_quadrado();
+        if (1e-160 < lensq <= 1) {
+            return p/sqrt(lensq);
+        }
+    }
+}
+
+inline Vetor3d random_hemisferio(const Vetor3d& normal) {
+    Vetor3d on_unit_sphere = random_unit_vector();
+    if (dot(on_unit_sphere, normal) > 0.0) {
+        return on_unit_sphere;
+    }else {
+        return -on_unit_sphere;
+    }
+}
+
+inline Vetor3d refletir(const Vetor3d& v, const Vetor3d& n) {
+    return v - 2*dot(v, n) * n;
 }
 
 #endif

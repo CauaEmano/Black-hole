@@ -1,10 +1,13 @@
 #ifndef HIT_H
 #define HIT_H
 
+class Material;
+
 class recordar_hits {
     public: 
         Ponto3d p;
         Vetor3d normal;
+        shared_ptr<Material> mat;
         double t;
         bool front_face; 
 

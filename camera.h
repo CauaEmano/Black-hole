@@ -2,11 +2,14 @@
 #define CAMERA_H
 
 #include "hit.h"
+#include "material.h"
 
 class Camera {
     public:
         double quadros = 1.0;
         int largura = 100;
+        int samples_por_pixel = 10;
+        int max_recursao = 10;
 
         void renderizar(const hitaveis& mundo) {
             inicializar();
@@ -16,12 +19,12 @@ class Camera {
             for (int j = 0; j < altura; j++) {
                 std::clog << "\rScanline Remaining: " << (altura - j) << ' ' << std::flush;
                 for (int i = 0; i < largura; i++) {
-                    auto pixel_centro = pixel00_local + (i*pixel_delta_u) + (j*pixel_delta_v);
-                    auto raio_direcao = pixel_centro - centro;
-                    Raio r(centro, raio_direcao);
-
-                    Cor pixel_color = raio_cor(r, mundo);
-                    escrever_cor(std::cout, pixel_color);
+                    Cor pixel_color(0,0,0);
+                    for (int sample = 0; sample < samples_por_pixel; sample++) {
+                        Raio r = get_raio(i,j);
+                        pixel_color += raio_cor(r, max_recursao, mundo);
+                    }
+                    escrever_cor(std::cout, pixel_samples_scale * pixel_color);
                 }
             }
         }
@@ -29,6 +32,7 @@ class Camera {
     private:
         int altura;
         Ponto3d centro;
+        double pixel_samples_scale;
         Ponto3d pixel00_local;
         Vetor3d pixel_delta_u;
         Vetor3d pixel_delta_v;
@@ -36,6 +40,7 @@ class Camera {
         void inicializar() {
             altura = int(largura/quadros);
             altura = (altura < 1) ? 1: altura;
+            pixel_samples_scale = 1.0/samples_por_pixel;
             centro = Ponto3d(0,0,0);
 
             auto focal_lente = 1.0;
@@ -52,10 +57,32 @@ class Camera {
             pixel00_local = viewport_cima_esquerda + 0.5 *(pixel_delta_u + pixel_delta_v);
         }
 
-        Cor raio_cor(const Raio& r, const hitaveis& mundo) {
+        Raio get_raio(int i, int j) const {
+            auto offset = sample_square();
+            auto pixel_sample = pixel00_local + ((i+offset.x()) * pixel_delta_u) + ((j + offset.y()) * pixel_delta_v);
+            auto raio_origem = centro;
+            auto raio_direcao = pixel_sample - raio_origem;
+
+            return Raio(raio_origem, raio_direcao);
+        }
+
+        Vetor3d sample_square() const {
+            return Vetor3d(random_double() - 0.5, random_double() - 0.5, 0);
+        }
+
+        Cor raio_cor(const Raio& r, int depth, const hitaveis& mundo) {
+            if (depth <= 0) {
+                return Cor(0,0,0);
+            }
+            
             recordar_hits rec;
-            if (mundo.hit(r, Intervalo(0, infinity), rec)) {
-                return 0.5 * (rec.normal + Cor(1,1,1));
+            if (mundo.hit(r, Intervalo(0.001, infinity), rec)) {
+                Raio espalhado;
+                Cor atenuacao;
+                if (rec.mat->espalhar(r, rec, atenuacao, espalhado)){
+                    return atenuacao * raio_cor(espalhado, depth-1, mundo);
+                return Cor(0,0,0);
+                }
             }
 
             Vetor3d direcao_unidade = vetor_normalizado(r.direcao());
